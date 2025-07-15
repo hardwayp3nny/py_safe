@@ -6,9 +6,9 @@ from constants import (
     NEG_RISK_ADAPTER_ADDRESS,
     USDCE_DIGITS,
 )
-from utils import get_index_set, load_abi
-from gnosis_safe import sign_and_execute_safe_transaction, aggregate_transaction
-from types import SafeTransaction, OperationType
+from .utils import get_index_set, load_abi
+from .gnosis_safe import sign_and_execute_safe_transaction, aggregate_transaction
+from .safe_types import SafeTransaction, OperationType
 
 
 def main():
@@ -24,14 +24,15 @@ def main():
 
     args = parser.parse_args()
 
-    ctf_contract = Web3().eth.contract(abi=load_abi("ctfAbi"))
-    neg_risk_adapter_contract = Web3().eth.contract(abi=load_abi("negRiskAdapterAbi"))
+    w3 = Web3()
+    ctf_contract = w3.eth.contract(abi=load_abi("ctfAbi"))
+    neg_risk_adapter_contract = w3.eth.contract(abi=load_abi("negRiskAdapterAbi"))
     gas_options = {'gasPrice': 200000000000}
 
     if args.command == "split":
         to = NEG_RISK_ADAPTER_ADDRESS if args.neg_risk else CONDITIONAL_TOKENS_FRAMEWORK_ADDRESS
-        data = ctf_contract.encodeABI(
-            fn_name="splitPosition",
+        data = ctf_contract.encode_abi(
+            abi_element_identifier="splitPosition",
             args=[
                 USDC_ADDRESS,
                 bytes.fromhex("00" * 32),
@@ -50,8 +51,8 @@ def main():
 
     elif args.command == "merge":
         to = NEG_RISK_ADAPTER_ADDRESS if args.neg_risk else CONDITIONAL_TOKENS_FRAMEWORK_ADDRESS
-        data = ctf_contract.encodeABI(
-            fn_name="mergePositions",
+        data = ctf_contract.encode_abi(
+            abi_element_identifier="mergePositions",
             args=[
                 USDC_ADDRESS,
                 bytes.fromhex("00" * 32),
@@ -71,13 +72,13 @@ def main():
     elif args.command == "redeem":
         to = NEG_RISK_ADAPTER_ADDRESS if args.neg_risk else CONDITIONAL_TOKENS_FRAMEWORK_ADDRESS
         if args.neg_risk:
-            data = neg_risk_adapter_contract.encodeABI(
-                fn_name="redeemPositions",
+            data = neg_risk_adapter_contract.encode_abi(
+                abi_element_identifier="redeemPositions",
                 args=[bytes.fromhex(args.condition_id[2:]), args.redeem_amounts],
             )
         else:
-            data = ctf_contract.encodeABI(
-                fn_name="redeemPositions",
+            data = ctf_contract.encode_abi(
+                abi_element_identifier="redeemPositions",
                 args=[
                     USDC_ADDRESS,
                     bytes.fromhex("00" * 32),
@@ -95,8 +96,8 @@ def main():
 
     elif args.command == "convert":
         index_set = get_index_set(args.question_ids)
-        data = neg_risk_adapter_contract.encodeABI(
-            fn_name="convertPositions",
+        data = neg_risk_adapter_contract.encode_abi(
+            abi_element_identifier="convertPositions",
             args=[
                 bytes.fromhex(args.market_id[2:]),
                 index_set,
@@ -114,8 +115,8 @@ def main():
     elif args.command == "batch":
         # Example of batching two split transactions
         to = CONDITIONAL_TOKENS_FRAMEWORK_ADDRESS
-        data1 = ctf_contract.encodeABI(
-            fn_name="splitPosition",
+        data1 = ctf_contract.encode_abi(
+            abi_element_identifier="splitPosition",
             args=[
                 USDC_ADDRESS,
                 bytes.fromhex("00" * 32),
@@ -131,8 +132,8 @@ def main():
             "operation": OperationType.CALL,
         }
 
-        data2 = ctf_contract.encodeABI(
-            fn_name="splitPosition",
+        data2 = ctf_contract.encode_abi(
+            abi_element_identifier="splitPosition",
             args=[
                 USDC_ADDRESS,
                 bytes.fromhex("00" * 32),
